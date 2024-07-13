@@ -1,0 +1,17 @@
+{
+  "name": "fullstack-01",
+  "version": "1.0.0",
+  "description": "1st fullstack project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "javascript",
+    "frontend",
+    "and",
+    "backend"
+  ],
+  "author": "Aadesh kumar",
+  "license": "ISC"
+}
