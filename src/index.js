@@ -1,11 +1,13 @@
 import dotenv from "dotenv" ;
 import connectDB from "./db/index.js";
+import { DB_NAME } from "./constants.js";
 import { app } from "./app.js";
+import mongoose from "mongoose";
 dotenv.config({
     path : "./.env"
 })
 
-//connecting to the DB
+// connecting to the DB
 connectDB()
 .then(()=>{
     app.on("error",(e)=>{
@@ -32,9 +34,9 @@ connectDB()
 
 
 
-// const app = express() ;
+// // const app = express() ;
 // // Connect to MongoDB
-// (async ()=>{
+// const dbConenct =async ()=>{
 //     try {
 //         await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`);
 //         app.on("error",(e)=>{
@@ -46,4 +48,6 @@ connectDB()
 //     } catch (error) {
 //         console.error("ERROR",error)
 //     }
-// })()
+// }
+
+// dbConenct() ;

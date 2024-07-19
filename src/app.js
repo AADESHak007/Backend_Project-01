@@ -15,4 +15,9 @@ app.use(express.urlencoded({extended: true ,limit:"16kb"})) // handles the data 
 app.use(express.static("public")) //to store images or logos that are public
 app.use(express(cookieParser())) //handles the cookies in the user's BROWSER
 
+//importing the routes here.....
+import userRoutes from './routes/user.routes.js'
+
+app.use("/api/v1/users" ,userRoutes)
+
 export {app} ;
