@@ -42,7 +42,7 @@ const userSchema = new mongoose.Schema({
 userSchema.pre("save",async function (next) {
     if(!this.isModified("password")) return next() ;
     //this will hash  the password only the password field is bieng modified
-    this.password = bcrypt.hash(this.password ,10) 
+    this.password = await bcrypt.hash(this.password ,10) 
     next() ;
 })
 //creating a our own method for validating the password entered  by the user
