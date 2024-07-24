@@ -5,9 +5,8 @@ import { User } from "../models/user.model.js";
 import { uploadFile } from "../utils/cloudinary.js";
 
 const registerUser = asyncHandler(async (req, res, next) => {
-  //1. Taking user details from the useror frontend[req.body and multer for files]
-  const { email, username, fullname, avatar, coverImage, password } = req.body;
-  console.log("email :", email);
+  //1. Taking user details from the user or frontend[req.body and multer for files]
+  const { email, username, fullname,password } = req.body;
 
   //Validating if all the fields are filled ...
   if (
@@ -19,9 +18,9 @@ const registerUser = asyncHandler(async (req, res, next) => {
   }
 
   //2.Checking if the username or the email is already there in the database...
-  const userExists = User.findOne({
+  const userExists = await User.findOne({
     $or: [{ email }, { username }], //add all fields that you want to check
-  }); //can we use AWAIT ?
+  }); //can we use AWAIT ? we have to as the db is assumed to be at a location far from us
   if (userExists) {
     throw new ApiError(
       408,
@@ -29,19 +28,24 @@ const registerUser = asyncHandler(async (req, res, next) => {
     );
   }
 
-  //3. check for avatar file's presence ....
+  //3. check for avatar[is the name of the file] file's presence ....
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  console.log("avatar local path: " + avatarLocalPath) ;
+  let coverImageLocalPath;
+  if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+      coverImageLocalPath = req.files.coverImage[0].path
+  }
 
   if (!avatarLocalPath) {
     throw new ApiError(401, "Avatar file is required...");
   }
 
   //4.uploading file on Cloudinary from the multer....
-  const avatarPath = await uploadFile(avatarLocalPath); //using await makes sense as it will take some time to upload
-  const coverImagePath = await uploadFile(coverImageLocalPath);
+  const cloudinaryAvatarPath = await uploadFile(avatarLocalPath); //using await makes sense as it will take some time to upload
+  console.log("uploading file on Cloudinary",cloudinaryAvatarPath)
+  const cloudinaryCoverImagePath = await uploadFile(coverImageLocalPath);
 
-  if (!avatarPath) {
+  if (!cloudinaryAvatarPath) {
     throw new ApiError(402, "Error occurred while uploading avatar");
   }
 
@@ -51,14 +55,13 @@ const registerUser = asyncHandler(async (req, res, next) => {
     username,
     email,
     password,
-    refreshToken,
-    avatar: avatarPath.url,
-    coverImage: coverImagePath?.url || " ",
+    avatar: cloudinaryAvatarPath,
+    coverImage: cloudinaryCoverImagePath || " ",
   });
   
   
   //6.checking if user is created successfully...
-  const userCreated = await user.findbyId(user._id).select("-password -refreshToken")
+  const userCreated = await User.findById(user._id).select("-password -refreshToken")
   if (!userCreated) {
     throw new ApiError(500, "Error occurred while creating user");
   }
@@ -70,3 +73,11 @@ const registerUser = asyncHandler(async (req, res, next) => {
 });
 
 export default registerUser;
+
+
+
+
+
+
+
+//CRUD operations are performed on the model not on the schema or document ;

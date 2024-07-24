@@ -19,6 +19,6 @@ app.use(express(cookieParser())) //handles the cookies in the user's BROWSER
 import userRoutes from './routes/user.routes.js'
 
 //setting up the routes....
-app.use("/api/v1/users" ,userRoutes)
+app.use("/api/v1/users",userRoutes)
 
 export {app} ;

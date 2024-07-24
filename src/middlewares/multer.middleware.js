@@ -1,4 +1,4 @@
-import multer from './multer'
+import multer from 'multer'
 
 //this will upload the file on the local server....
 const storage = multer.diskStorage({
@@ -12,3 +12,4 @@ const storage = multer.diskStorage({
   
   const upload = multer({storage})
   export default upload;
+
