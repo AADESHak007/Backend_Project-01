@@ -4,6 +4,30 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.model.js";
 import { uploadFile } from "../utils/cloudinary.js";
 
+
+
+const generateTokens = async (userId)=>{
+
+  try {
+    //find the user witht the userId..
+    const user = User.findById(userId) ;
+    const AccessToken =  await user.generateAccessToken() ;
+    const RefreshToken = await user.generateRefreshToken() ;
+
+    //sending the refresh token to the db .
+    user.refershToken = RefreshToken
+    await user.save({validateBeforeSave: false}) //db operation 
+
+    return {AccessToken,RefreshToken} ;
+
+    
+  } catch (error) {
+    throw new ApiError(500,"error occurred while generating tokens")
+  }
+}
+
+
+
 const registerUser = asyncHandler(async (req, res, next) => {
   //1. Taking user details from the user or frontend[req.body and multer for files]
   const { email, username, fullname,password } = req.body;
@@ -71,6 +95,61 @@ const registerUser = asyncHandler(async (req, res, next) => {
     new ApiResponse (201,userCreated,"User Registered successfully !!")
   )
 });
+const loginUser =asyncHandler(async (req,res)=>{
+  //1.REQUESTING FOR THE DATA ENTERED BY THE USER [EXPRESS]
+  const{email,username,password} = req.body ;
+
+  //2.checking if the fields are not empty...
+
+  if(!email ||!username ||password){
+    throw new ApiError(400,"All fields are required!!")
+  }
+  
+  //3.finding the user in the database ...
+  const user =await User.findOne({
+    $or:[{email},{username}]
+  })
+      //3.1 if the user is not in the db ..
+  if(!user) throw new ApiError(404,"user not found")
+
+  //4.validating the password ....
+  const validatePassword = await user.checkPassword(password) ;
+
+  if(!validatePassword) throw new ApiError(401,"invalid user credentials")
+
+    //generating refresh token and access token..
+    const {AccessToken,RefreshToken}= await generateTokens(user._id) ;
+    //the token field in our db is still empty,so either we make another db call 
+    //or we update the token field here.
+    user.accessToken = AccessToken;
+    user.refreshToken = RefreshToken;
+    await user.save({validateBeforeSave: false}) //db operation
+
+    const loggedInUser =user.select("-password -refreshToken") ;
+    
+    //generating option for security measures..
+    const options ={
+      httpOnly:true,
+      secure:true
+    }
+    
+    
+    //5. sending the response in JSON format...
+
+    return res
+    .status(200)
+    .cookie("access Token", AccessToken ,options)
+    .cookie("refresh Token", RefreshToken ,options)
+    .json(new ApiResponse(
+      200,
+      {user :loggedInUser,AccessToken,RefreshToken},
+      "User logged in successfully"
+    ))
+
+
+    
+})
+
 
 export default registerUser;
 
