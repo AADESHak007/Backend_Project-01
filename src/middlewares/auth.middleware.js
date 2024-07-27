@@ -7,12 +7,13 @@ import { User } from "../models/user.model.js";
 const verifyJWT = asyncHandler(async (req,res,next)=>{
    try {
     const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ","")
- 
+ console.log(token) ;
     if(!token){
      throw new ApiError(401,"Unathorized access") //message modifiable??
     }
  
-   const decodedToken = jwt.verify(token,process.env.ACCESS_TOKEN_SECRET) ;
+   const decodedToken = jwt.verify(token,process.env.ACCESS_TOKEN_SECRET) ; // to verify the token is valid or not
+   console.log(decodedToken) ;
  
   const user = await User.findById(decodedToken?._id).select("-password -refreshToken") ;
  
@@ -22,6 +23,7 @@ const verifyJWT = asyncHandler(async (req,res,next)=>{
    req.user = user ;
    next() ;
    } catch (error) {
+      console.log(error.message)
     throw new ApiError(401,"Invalid !! Access Denied")
    }
 
