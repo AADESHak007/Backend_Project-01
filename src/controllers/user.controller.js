@@ -444,6 +444,7 @@ export {
   updatecoverImage,
   renewPassword,
   getUserChannelProfile,
+  getWatchHistory
 };
 
 //CRUD operations are performed on the model not on the schema or document ;
