@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.model.js";
 import { uploadFile } from "../utils/cloudinary.js";
+import mongoose from "mongoose";
 
 const generateTokens = async (userId) => {
   try {
@@ -314,6 +315,7 @@ const updatecoverImage = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, { user }, "coverImage updated successfully"));
 });
+//delete the old images before adding a new one....
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {
   const { username } = req.params;
@@ -331,58 +333,104 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       },
     },
     {
-      $lookup:{
-        from : "subscriptions" ,//a model is saved in its 1.plural form 2.smallcased
-        localField:"_id",
-        foreignField:"channel",
-        as : "subscribers"
-      }
+      $lookup: {
+        from: "subscriptions", //a model is saved in its 1.plural form 2.smallcased
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
+      },
     },
     {
-      $lookup:{
-        from : "subscriptions",
-        localField:"_id",
-        foreignField:"subscriber",
-        as : "subscribedTo"
-      }
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribedTo",
+      },
     },
     {
-      $addFields:{
+      $addFields: {
         subscribersCount: {
-          $size:"$subscribers"
+          $size: "$subscribers",
         },
         subscribedToCount: {
-          $size:"$subscribedTo"
+          $size: "$subscribedTo",
         },
-        isSubscribed:{
-          $cond : {
-            if:{$in:[req.user?._id,"$subscribers.subscriber"]},
-            then:true,
-            else:false
-          }
-        }
-      }
+        isSubscribed: {
+          $cond: {
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
     },
     {
-      $project:{
-        fullname:1,
-        username:1,
-        email:1,
-        avatar:1,
-        coverImage:1,
-        subscribersCount:1,
-        subscribedToCount:1,
-        isSubscribed:1
-      }
-    }
+      $project: {
+        fullname: 1,
+        username: 1,
+        email: 1,
+        avatar: 1,
+        coverImage: 1,
+        subscribersCount: 1,
+        subscribedToCount: 1,
+        isSubscribed: 1,
+      },
+    },
   ]);
   if (!channel?.length) {
     throw new ApiError(404, "Channel details not found !!!");
   }
   return res
-  .status(200)
-  .json(new ApiResponse(200, channel[0], "Channel details fetched successfully"));
+    .status(200)
+    .json(
+      new ApiResponse(200, channel[0], "Channel details fetched successfully")
+    );
+});
 
+const getWatchHistory = asyncHandler(async (req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: { $toObjectId: req.user._id }, //mongoose.Types.ObjectId() got deprecated
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        foreignField: "_id",
+        localField: "watchHistory",
+        as: "watchHistory",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline:[{
+                $project: {
+                  username: 1,
+                  fullname: 1,
+                  avatar: 1,
+                },
+              },{
+                $addFields :{
+                  owner :{
+                    $first:"$owner"
+                  } 
+                }
+              }]
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  return res
+  .status(200)
+  .json(new ApiResponse(200,user[0].watchHistory,"watchHistory fetched succesfully!!!!!"))
 });
 
 export {
